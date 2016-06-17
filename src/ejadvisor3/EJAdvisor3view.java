@@ -26,7 +26,6 @@ import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.JTextComponent;
-
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -38,68 +37,86 @@ import javax.swing.text.JTextComponent;
  * @author Akinori
  */
 public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI {
-    static final String TITLE = "EJAdvisor version 1.3";
+
+    static final String TITLE  = "EJAdvisor version 1.4";
+    static final String author = "作者: 伊藤 彰則";
+    static final String copyrightTextToSpeech ="音声合成には以下のソフトウェアを使用しています\nGyutan, Sasakama:\nCopyright(c) 2015 東北大学 伊藤・能勢研究室\nCopyright(c) 2008-2015 名古屋工業大学 徳田・南角研究室";
+    
     private final String propertyFile = ".EJAdvisor3.properties";
     private final String PROPERTY_UIFONT_FAMILY = "UI_FONT_FAMILY";
-    private final String PROPERTY_UIFONT_SIZE   = "UI_FONT_SIZE";
+    private final String PROPERTY_UIFONT_SIZE = "UI_FONT_SIZE";
     private final String PROPERTY_TEXTFONT_FAMILY = "TEXT_FONT_FAMILY";
-    private final String PROPERTY_TEXTFONT_SIZE   = "TEXT_FONT_SIZE";
-    
+    private final String PROPERTY_TEXTFONT_SIZE = "TEXT_FONT_SIZE";
+
+    private boolean speechSynthesis;
     private boolean dataCreated;
     private final FileSaver fileSaver;
     private EJAdvisor3App app;
     private EJAdvisor3 ejadv3;
     private WordProperty currentPopup; //現在ポップアップしている単語
     private JTextComponent currentFocus; //現在フォーカスのあるTextComponent;
+    private Hanasu hanasu;
 
-    
-    
     private String[] fontList = {"メイリオ", "ＭＳ ゴシック", "OSAKA"};
     private String[] uiFontList = {"Meiryo UI", "MS UI Gothic", "OSAKA"};
-    
+
     private Font uiFont, textFont;
     private Font defaultTextFont, defaultUIFont;
-    
-    private final int defaultUIFontSize   = 14;
+
+    private final int defaultUIFontSize = 14;
     private final int defaultTextFontSize = 18;
     private final int uiFontMinSize = 12;
     private final int uiFontMaxSize = 54;
     private final int textFontMinSize = 12;
     private final int textFontMaxSize = 54;
-    
+
     private ArrayList<JComponent> uiFontComponents;
     private ArrayList<JComponent> uiSmallFontComponents;
     private ArrayList<JComponent> textFontComponents;
-      
-    private final int fontPlus  = 10;
+
+    private final int fontPlus = 10;
     private final int fontMinus = 2;
     private final int fontSmall = 4;
-    
+
     private String[] availableFontFamilyNames;
     private Properties properties;
- 
+
     /**
      * Creates new form EJAdvisor3view
      */
     public EJAdvisor3view(EJAdvisor3App app) {
-        loadProperties();
-        setDefaultFont();
-        initFont();
-        System.err.println("text font:"+textFont.getFamily()+", ui font:"+uiFont.getFamily());
-        availableFontFamilyNames = getAvailableFontFamilyNames("日本語あいうえおアイウエオ１２３４５６７８９０ＡＢＣＤＥー？！”＃＄％＆（）＜＞");
-        
-        initComponents();
-        initSettings();
-        
         this.app = app;
         this.ejadv3 = app.ejadv3;
-        dataCreated = false;
-        fileSaver = new FileSaver(this,null);
+
+        // 保存されている property の読み込み
+        loadProperties();
+        
+        // Font設定
+        setDefaultFont();
+        initFont();
+        System.err.println("text font:" + textFont.getFamily() + ", ui font:" + uiFont.getFamily());
+        availableFontFamilyNames = getAvailableFontFamilyNames("日本語あいうえおアイウエオ１２３４５６７８９０ＡＢＣＤＥー？！”＃＄％＆（）＜＞");
+        initComponents();
+
+        // 音声合成機能 
+        // フォント反映(InitSettings())前に hanasu を new する必要がある
+        hanasu = new Hanasu();
+        hanasu.initialize(ejadv3.getBaseDir(), properties);
+
+        // フォント反映
+        initSettings();
+
+        // フラグ設定
+        dataCreated     = false;
+        speechSynthesis = false;
+
+        setTitle(TITLE);
+
+        fileSaver = new FileSaver(this, null);
         String[] ext = {".txt"};
         fileSaver.setExtensions(ext);
         fileSaver.setDescription("Text file");
-        setTitle(TITLE);
-       
+
         // 終了時確認動作
         // 全体の終了処理を禁止する
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -108,16 +125,16 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
                 windowClosingConfirmation();
             }
         });
-     
+
         analysisPane.addHyperlinkListener(new WordPropertyPopupListener());
-        
+
         // 作成した文書を直接編集したときに「変更あり」にするための処理
         inputText.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
                 dataCreated = true;
             }
-            
+
             @Override
             public void removeUpdate(DocumentEvent e) {
                 dataCreated = true;
@@ -128,10 +145,11 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
                 dataCreated = true;
             }
 
-       });
+        });
     }
-       
+
     class WordPropertyPopupListener implements HyperlinkListener {
+
         @Override
         public void hyperlinkUpdate(HyperlinkEvent e) {
             //System.out.println("event:"+e.getEventType());
@@ -146,7 +164,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
                 int i = Integer.parseInt(x[1]);
                 WordProperty w = ejadv3.currentMorph(s, i);
                 //System.out.println("s:"+s+" i:"+i+" w:"+w);
-                morphemeInfoPopup.setSize(250,250);
+                morphemeInfoPopup.setSize(250, 250);
                 mpBasicForm.setText(w.getBasicString());
                 mpWordTitle.setText(w.toString());
                 mpGrade.setText(Integer.toString(w.getGrade()));
@@ -159,8 +177,9 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
             }
         }
     }
-    
+
     // Windowを閉じるときの確認
+
     public void windowClosingConfirmation() {
         if (dataCreated) {
             //System.out.println("Data created");
@@ -170,38 +189,39 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
                     "ファイル保存の確認",
                     JOptionPane.YES_NO_CANCEL_OPTION,
                     JOptionPane.WARNING_MESSAGE
-                    );
+            );
             if (confirm == JOptionPane.YES_OPTION) {
-                if (saveCreatedText() != FileSaver.SAVED)
+                if (saveCreatedText() != FileSaver.SAVED) {
                     return;
-            }
-            else if (confirm == JOptionPane.CANCEL_OPTION)
+                }
+            } else if (confirm == JOptionPane.CANCEL_OPTION) {
                 return;
-        }
-        else {
+            }
+        } else {
             //System.out.println("No change");
         }
         saveProperties();
         System.exit(0);
     }
-/*    
-    @Action
-    public void showAboutBox() {
-        if (aboutBox == null) {
-            JFrame mainFrame = EJAdvisor2App.getApplication().getMainFrame();
-            aboutBox = new EJAdvisor2AboutBox(mainFrame);
-            aboutBox.setLocationRelativeTo(mainFrame);
-        }
-        EJAdvisor2App.getApplication().show(aboutBox);
-    }
-*/    
-    public void initSettings(){       
+    /*    
+     @Action
+     public void showAboutBox() {
+     if (aboutBox == null) {
+     JFrame mainFrame = EJAdvisor2App.getApplication().getMainFrame();
+     aboutBox = new EJAdvisor2AboutBox(mainFrame);
+     aboutBox.setLocationRelativeTo(mainFrame);
+     }
+     EJAdvisor2App.getApplication().show(aboutBox);
+     }
+     */
+
+    public void initSettings() {
         uiFontComponents = new ArrayList<JComponent>();
         uiSmallFontComponents = new ArrayList<JComponent>();
         textFontComponents = new ArrayList<JComponent>();
-        
+
         uiFontComponents.add(fileMenu);
-        uiFontComponents.add(editMenu); 
+        uiFontComponents.add(editMenu);
         uiFontComponents.add(jMenu2);
         uiFontComponents.add(helpMenu);
         uiFontComponents.add(jButton1);
@@ -221,16 +241,17 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         uiFontComponents.add(jLabel14);
         uiFontComponents.add(jLabel15);
         uiFontComponents.add(jLabel17);
-        
+
         // uiFontComponents.add(jLabel18);
         uiFontComponents.add(jLabel19);
         //uiFontComponents.add(jLabel20);
         uiFontComponents.add(jLabel21);
-        
+
         uiFontComponents.add(jComboBox2);
         uiFontComponents.add(jButton5);
         uiFontComponents.add(jButton6);
-        
+        uiFontComponents.add(jCheckBox1);
+
         textFontComponents.add(inputText);
         textFontComponents.add(analysisPane);
         textFontComponents.add(evaluationPointPane);
@@ -258,175 +279,193 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         uiSmallFontComponents.add(jMenuItem1);
         uiSmallFontComponents.add(contentsMenuItem);
         uiSmallFontComponents.add(aboutMenuItem);
-        
+
         updateTextFont();
         updateUIFont();
     }
-    
-    public int findFontFamilyIndex(Font f){
+
+    public int findFontFamilyIndex(Font f) {
         int index = -1;
         String fontFamilyName = f.getFamily();
-        for(int i=0;i < availableFontFamilyNames.length;i++){
-            if(fontFamilyName.equals(availableFontFamilyNames[i])){
+        for (int i = 0; i < availableFontFamilyNames.length; i++) {
+            if (fontFamilyName.equals(availableFontFamilyNames[i])) {
                 index = i;
                 break;
             }
         }
-        
-        return(index);
+
+        return (index);
     }
-    
-    public void updateTextFont(){
-        System.out.println("Font:"+textFont.getFamily());
-        System.out.println("Size:"+textFont.getSize());
-        for(JComponent component:textFontComponents)
+
+    public void updateTextFont() {
+        System.out.println("Font:" + textFont.getFamily());
+        System.out.println("Size:" + textFont.getSize());
+        for (JComponent component : textFontComponents) {
             component.setFont(textFont);
-        
-        mpWordTitle.setFont(textFont.deriveFont(Font.BOLD, (float)fontPlus+textFont.getSize()));
+        }
+        hanasu.setTextFont(textFont);
+
+        mpWordTitle.setFont(textFont.deriveFont(Font.BOLD, (float) fontPlus + textFont.getSize()));
 
         int index = findFontFamilyIndex(textFont);
-        if(index != -1)
+        if (index != -1) {
             jComboBox2.setSelectedIndex(index);
-   
+        }
+
         jSlider2.setValue(textFont.getSize());
         setTextFontProperties();
+
     }
-    
-    public void updateUIFont(){
-         //System.out.println("Font:"+textFont.getFamily());
+
+    public void updateUIFont() {
+        //System.out.println("Font:"+textFont.getFamily());
         //System.out.println("Size:"+textFont.getSize());
-        for(JComponent component:uiFontComponents)
+        for (JComponent component : uiFontComponents) {
             component.setFont(uiFont);
-        for(JComponent component:uiSmallFontComponents)
-            component.setFont(uiFont.deriveFont(Font.PLAIN, (float)-fontMinus+uiFont.getSize()));
-   
-        jLabel18.setFont(uiFont.deriveFont(Font.PLAIN, (float)-fontSmall+uiFont.getSize()));
-        jLabel20.setFont(uiFont.deriveFont(Font.PLAIN, (float)-fontSmall+uiFont.getSize()));
-        
+        }
+
+        hanasu.setUIFont(uiFont);
+
+        for (JComponent component : uiSmallFontComponents) {
+            component.setFont(uiFont.deriveFont(Font.PLAIN, (float) -fontMinus + uiFont.getSize()));
+        }
+
+        hanasu.setUISmallFont(uiSmallFontComponents.get(0).getFont());
+
+        jLabel18.setFont(uiFont.deriveFont(Font.PLAIN, (float) -fontSmall + uiFont.getSize()));
+        jLabel20.setFont(uiFont.deriveFont(Font.PLAIN, (float) -fontSmall + uiFont.getSize()));
+
         int index = findFontFamilyIndex(uiFont);
-        if(index != -1)
+        if (index != -1) {
             jComboBox1.setSelectedIndex(index);
-        
+        }
+
         jFrame1.pack();
         jSlider1.setValue(uiFont.getSize());
         setUIFontProperties();
     }
-    
-    public String[] getAvailableFontFamilyNames(String prtStr){
+
+    public String[] getAvailableFontFamilyNames(String prtStr) {
         GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
         String[] allFonts = ge.getAvailableFontFamilyNames();
         ArrayList<String> tmpArray = new ArrayList<String>();
-        for(int i=0;i < allFonts.length;i++){
+        for (int i = 0; i < allFonts.length; i++) {
             Font f = new Font(allFonts[i], Font.PLAIN, 12);
-            if(prtStr == null || f.canDisplayUpTo(prtStr) == -1)
+            if (prtStr == null || f.canDisplayUpTo(prtStr) == -1) {
                 tmpArray.add(allFonts[i]);
+            }
         }
-        
+
         String[] availableFonts = new String[tmpArray.size()];
-        for(int i=0;i < tmpArray.size();i++)
+        for (int i = 0; i < tmpArray.size(); i++) {
             availableFonts[i] = tmpArray.get(i);
-        
+        }
+
         return availableFonts;
     }
-    
-    private void loadProperties(){
+
+    private void loadProperties() {
         properties = new Properties();
-        
-        try{
+
+        try {
             InputStream is = new FileInputStream(propertyFile);
             properties.load(is);
             is.close();
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();;
         }
     }
-    
-    private void saveProperties(){
-      try{
-          //String saveDate = new Date().toString();
-          OutputStream os = new FileOutputStream(propertyFile);
-          properties.store(os, null);
-          os.close();
-      }catch(Exception e){
-          e.printStackTrace();
-      }
+
+    private void saveProperties() {
+        try {
+            //String saveDate = new Date().toString();
+            OutputStream os = new FileOutputStream(propertyFile);
+            properties.store(os, null);
+            os.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
-    
-    private void setUIFontProperties(){
+
+    private void setUIFontProperties() {
         properties.setProperty(PROPERTY_UIFONT_FAMILY, uiFont.getFamily());
-        properties.setProperty(PROPERTY_UIFONT_SIZE  , String.valueOf(uiFont.getSize()));
+        properties.setProperty(PROPERTY_UIFONT_SIZE, String.valueOf(uiFont.getSize()));
     }
-    
-    private void setTextFontProperties(){
+
+    private void setTextFontProperties() {
         properties.setProperty(PROPERTY_TEXTFONT_FAMILY, textFont.getFamily());
-        properties.setProperty(PROPERTY_TEXTFONT_SIZE  , String.valueOf(textFont.getSize()));
+        properties.setProperty(PROPERTY_TEXTFONT_SIZE, String.valueOf(textFont.getSize()));
     }
-    
+
     /*
-    */
-    public void setDefaultFont(){
+     */
+    public void setDefaultFont() {
         // dummy のフォント名を指定して default のフォント名を調べる
         Font ff = Font.decode("abcdefg");
         String defaultFontFamily = ff.getFamily();
-        
+
         String uiFontFamily = defaultFontFamily;
-        for(int i=0;i < uiFontList.length;i++){
+        for (int i = 0; i < uiFontList.length; i++) {
             Font f = Font.decode(uiFontList[i]);
-            if(!f.getFamily().equals(defaultFontFamily)){
-                    uiFontFamily = uiFontList[i];
-                    break;
+            if (!f.getFamily().equals(defaultFontFamily)) {
+                uiFontFamily = uiFontList[i];
+                break;
             }
         }
         defaultUIFont = new Font(uiFontFamily, Font.PLAIN, defaultUIFontSize);
 
         String textFontFamily = defaultFontFamily;
-        for(int i=0;i < fontList.length;i++){
+        for (int i = 0; i < fontList.length; i++) {
             Font f = Font.decode(fontList[i]);
-            if(!f.getFamily().equals(defaultFontFamily)){
-                    textFontFamily = fontList[i];
-                    break;
+            if (!f.getFamily().equals(defaultFontFamily)) {
+                textFontFamily = fontList[i];
+                break;
             }
         }
-       
+
         defaultTextFont = new Font(textFontFamily, Font.PLAIN, defaultTextFontSize);
     }
-  
-    public void initFont(){
+
+    public void initFont() {
         String family = properties.getProperty(PROPERTY_TEXTFONT_FAMILY);
-        if(family == null)
+        if (family == null) {
             family = defaultTextFont.getFamily();
-        
+        }
+
         int fontSize;
         String sizeStr = properties.getProperty(PROPERTY_TEXTFONT_SIZE);
-        if(sizeStr == null)
+        if (sizeStr == null) {
             fontSize = defaultTextFont.getSize();
-        else
+        } else {
             fontSize = Integer.valueOf(sizeStr);
-        
+        }
+
         textFont = new Font(family, Font.PLAIN, fontSize);
-        
+
         family = properties.getProperty(PROPERTY_UIFONT_FAMILY);
-        if(family == null)
+        if (family == null) {
             family = defaultUIFont.getFamily();
-        
-        
+        }
+
         sizeStr = properties.getProperty(PROPERTY_UIFONT_SIZE);
-        if(sizeStr == null)
+        if (sizeStr == null) {
             fontSize = defaultUIFont.getSize();
-        else
+        } else {
             fontSize = Integer.valueOf(sizeStr);
-        
+        }
+
         uiFont = new Font(family, Font.PLAIN, fontSize);
     }
-    
+
     /**
      * ステータスラインにメッセージを表示
+     *
      * @param mesg メッセージ文字列
      */
     public void showMessage(String mesg) {
         statusMessageLabel.setText(mesg);
     }
-    
+
     /**
      * 解析結果の部分をクリア
      */
@@ -435,7 +474,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         evaluationPointPane.setText("");
         //jTextArea1.setText("");
     }
-    
+
     /**
      * 解析結果を挿入(HTML)
      */
@@ -443,12 +482,14 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         //System.out.println(htmlForInsert);
         analysisPane.setText(htmlForInsert);
     }
+
     /**
      * 評価ポイントを挿入(HTML)
      */
     public void setAnalysisPoint(String htmlForInsert) {
         evaluationPointPane.setText(htmlForInsert);
     }
+
     /**
      * 作成結果テキストを挿入(plain text)
      */
@@ -456,6 +497,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         resultText.setText(plaintextForInsert);
         dataCreated = true;
     }
+
     /**
      * 作成結果テキストを追加(plain text)
      */
@@ -463,54 +505,62 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         resultText.append(plaintextForInsert);
         dataCreated = true;
     }
+
     /**
      * 〔使える単語〕を挿入
      */
     public void setUsableWords(String words) {
         exampleSentenceArea.setText(words);
     }
+
     /**
      * 〔使える単語〕を追加
      */
     public void appendUsableWords(String words) {
         exampleSentenceArea.append(words);
     }
-    
+
     public void rewindUsableWords() {
-        jScrollPane9.getViewport().setViewPosition(new Point(0,0));        
+        jScrollPane9.getViewport().setViewPosition(new Point(0, 0));
     }
-    
-    
+
     /**
      * 評価ボタンのアクション
      */
     public void doAnalysis() throws UnsupportedEncodingException {
+        showMessage("テキスト解析中...");
         WordProperty[][] currentSent = ejadv3.doAnalysis(inputText.getText());
+        String[] feature = hanasu.gyutan.tokenToString(ejadv3.getTokens());
+        /*
+         for(int i=0;i < feature.length;i++)
+         System.err.println(feature[i]);
+         */
         clearResults();
         String res = ""; //評価結果
         String evaluationPoints = ""; // アドバイス
         Boolean wordflag = true;
-        
+
+        showMessage("テキスト評価中...");
         for (int s = 0; s < currentSent.length; s++) {
-            res += "(" + Integer.toString(s+1) + "):";
-            evaluationPoints += "<h2>文(" + Integer.toString(s+1) + ")</h2>";
+            res += "(" + Integer.toString(s + 1) + "):";
+            evaluationPoints += "<h2>文(" + Integer.toString(s + 1) + ")</h2>";
             WordProperty[] w = currentSent[s];
             double score = ejadv3.estimateScore(w);
             String scoreString = String.format("%.2f", score);
-            evaluationPoints += "score:"+scoreString+"<br/>";
-            
+            evaluationPoints += "score:" + scoreString + "<br/>";
+
             for (int i = 0; i < w.length; i++) {
                 // 文節間に空白を入れる
                 if (i > 0 && w[i].is_content_word()) {
                     //自立語の場合
                     //「する」に対して、直前が名詞-サ変接続の場合には自立語でない
-                    if (!w[i].getBasicString().equals("する") ||
-                            !w[i - 1].getPOS().equals("名詞-サ変接続")) {
+                    if (!w[i].getBasicString().equals("する")
+                            || !w[i - 1].getPOS().equals("名詞-サ変接続")) {
                         res += "&nbsp;&nbsp;";
                     }
                 }
                 // 形態素情報をアンカーに仕込む
-                res += "<a href=\""+s+":"+i+"\">";
+                res += "<a href=\"" + s + ":" + i + "\">";
 
                 // 単語が簡単かどうかのアドバイス
                 if (w[i].is_easy()) {
@@ -518,23 +568,23 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
                 } else if (w[i].is_difficult()) {
                     wordflag = false;
                     res += "<font color='#ff00ff'>" + w[i].toString() + "</font>";
-                    evaluationPoints += "<font color='#ff00ff'>" + w[i].toString() +
-                            "</font>: 難しい単語です。可能なら簡単な単語に置き換えましょう。<br/>";
+                    evaluationPoints += "<font color='#ff00ff'>" + w[i].toString()
+                            + "</font>: 難しい単語です。可能なら簡単な単語に置き換えましょう。<br/>";
                 } else {
                     // 級外単語
                     wordflag = false;
                     res += "<font color='#ff0000'>" + w[i].toString() + "</font>";
-                    evaluationPoints += "<font color='#ff0000'>" + w[i].toString() +
-                            "</font>: ほとんど理解してもらえません。可能なら簡単な単語に置き換えてください。<br/>";
+                    evaluationPoints += "<font color='#ff0000'>" + w[i].toString()
+                            + "</font>: ほとんど理解してもらえません。可能なら簡単な単語に置き換えてください。<br/>";
                 }
                 res += "</a>";
             }
             res += "<br/>";
-            
-            if(wordflag){
+
+            if (wordflag) {
                 evaluationPoints += "難しい単語はありませんでした。<br/>";
             }
-            
+
             //System.out.println(res);
             String[] advice = ejadv3.getRecommendations(w);
             for (int i = 0; i < advice.length; i++) {
@@ -543,18 +593,18 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         }
         setAnalysisResult(res);
         setAnalysisPoint(evaluationPoints);
-
+        hanasu.setTextFeature(feature);
+        showMessage("");
     }
-    
+
     /**
      * 入力テキストを結果ウィンドウに追加
      */
     public void commitText() {
-        appendResultText(inputText.getText()+"\n");
+        appendResultText(inputText.getText() + "\n");
         inputText.setText("");
         clearResults();
     }
-    
 
     /**
      * メニューの「名前を指定して保存」のアクション
@@ -564,14 +614,15 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
             if (fileSaver.save(resultText.getText(), null) == FileSaver.SAVED) {
                 dataCreated = false;
                 return FileSaver.SAVED;
-            }
-            else
+            } else {
                 return FileSaver.CANCELLED;
+            }
         } catch (IOException e) {
             showMessage(e.toString());
             return FileSaver.ERROR;
         }
     }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -614,6 +665,8 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         jLabel20 = new javax.swing.JLabel();
         jLabel21 = new javax.swing.JLabel();
         jButton6 = new javax.swing.JButton();
+        jPanel2 = new javax.swing.JPanel();
+        jCheckBox1 = new javax.swing.JCheckBox();
         jButton5 = new javax.swing.JButton();
         jLabel11 = new javax.swing.JLabel();
         jMenu1 = new javax.swing.JMenu();
@@ -832,7 +885,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addComponent(jLabel20)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jSlider2, javax.swing.GroupLayout.DEFAULT_SIZE, 268, Short.MAX_VALUE)
+                                .addComponent(jSlider2, javax.swing.GroupLayout.DEFAULT_SIZE, 515, Short.MAX_VALUE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jLabel21))
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
@@ -877,12 +930,38 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
                     .addComponent(jLabel20)
                     .addComponent(jSlider2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel21))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 21, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 217, Short.MAX_VALUE)
                 .addComponent(jButton6)
                 .addContainerGap())
         );
 
         jTabbedPane1.addTab("文字のサイズ", jPanel1);
+
+        jCheckBox1.setText("音声合成を使用する");
+        jCheckBox1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCheckBox1ActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jCheckBox1)
+                .addContainerGap(522, Short.MAX_VALUE))
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addGap(14, 14, 14)
+                .addComponent(jCheckBox1)
+                .addContainerGap(425, Short.MAX_VALUE))
+        );
+
+        jTabbedPane1.addTab("音声合成", jPanel2);
 
         jButton5.setText("OK");
         jButton5.addActionListener(new java.awt.event.ActionListener() {
@@ -1174,11 +1253,11 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     }// </editor-fold>//GEN-END:initComponents
 
     private void exitMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exitMenuItemActionPerformed
-      windowClosingConfirmation();
+        windowClosingConfirmation();
     }//GEN-LAST:event_exitMenuItemActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-       commitText();
+        commitText();
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
@@ -1194,21 +1273,21 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     }//GEN-LAST:event_saveAsMenuItemActionPerformed
 
     private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutMenuItemActionPerformed
-        JOptionPane.showMessageDialog(this, TITLE, "Version", JOptionPane.INFORMATION_MESSAGE);       
+        JOptionPane.showMessageDialog(this, TITLE+"\n"+author+"\n\n\n"+copyrightTextToSpeech, "このソフトウェアについて", JOptionPane.INFORMATION_MESSAGE);
     }//GEN-LAST:event_aboutMenuItemActionPerformed
 
     private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMenuItemActionPerformed
         JFileChooser fileChooser = new JFileChooser();
-        
+
         fileChooser.setFileFilter(new FileNameExtensionFilter("*.txt", "txt"));
         int selected = fileChooser.showOpenDialog(this);
-        if(selected == JFileChooser.APPROVE_OPTION){
+        if (selected == JFileChooser.APPROVE_OPTION) {
             String filename = fileChooser.getSelectedFile().getPath();
-            try{
+            try {
                 byte fileContentBytes[] = Files.readAllBytes(Paths.get(filename));
                 String fileContentStr = new String(fileContentBytes);
                 inputText.insert(fileContentStr, 0);
-            }catch(IOException e){
+            } catch (IOException e) {
                 //System.out.println("catch exception");
             }
         }
@@ -1266,45 +1345,16 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         }
         rewindUsableWords();
     }//GEN-LAST:event_jButton3ActionPerformed
-    
-    private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
-        // TODO add your handling code here:
-        int selectItem = jComboBox1.getSelectedIndex();
-        if(selectItem != -1){
-            String fontFamilyName = (String)jComboBox1.getSelectedItem();
-            uiFont = new Font(fontFamilyName, Font.PLAIN, uiFont.getSize());
-        }
-        updateUIFont();
-    }//GEN-LAST:event_jComboBox1ActionPerformed
-
-    private void jSlider1StateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_jSlider1StateChanged
-        // TODO add your handling code here:
-        int value = jSlider1.getValue();
-        uiFont = uiFont.deriveFont((float)value);
-        updateUIFont();
-    }//GEN-LAST:event_jSlider1StateChanged
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
         // TODO add your handling code here:
         jFrame1.setVisible(false);
-    }//GEN-LAST:event_jButton5ActionPerformed
-
-    private void jSlider2StateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_jSlider2StateChanged
-        // TODO add your handling code here:
-        int value = jSlider2.getValue();
-        textFont = textFont.deriveFont((float)value);
-        updateTextFont();
-    }//GEN-LAST:event_jSlider2StateChanged
-
-    private void jComboBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox2ActionPerformed
-        // TODO add your handling code here:
-        int selectItem = jComboBox2.getSelectedIndex();
-        if(selectItem != -1){
-            String fontFamilyName = (String)jComboBox2.getSelectedItem();
-            textFont = new Font(fontFamilyName, Font.PLAIN, textFont.getSize());
+        if (speechSynthesis) {
+            hanasu.setVisible(true);
+        } else {
+            hanasu.setVisible(false);
         }
-        updateTextFont();
-    }//GEN-LAST:event_jComboBox2ActionPerformed
+    }//GEN-LAST:event_jButton5ActionPerformed
 
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
         // TODO add your handling code here:
@@ -1316,11 +1366,50 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         // TODO add your handling code here:
         textFont = defaultTextFont;
         updateTextFont();
-        
+
         uiFont = defaultUIFont;
         updateUIFont();
     }//GEN-LAST:event_jButton6ActionPerformed
-     
+
+    private void jSlider2StateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_jSlider2StateChanged
+        // TODO add your handling code here:
+        int value = jSlider2.getValue();
+        textFont = textFont.deriveFont((float) value);
+        updateTextFont();
+    }//GEN-LAST:event_jSlider2StateChanged
+
+    private void jComboBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox2ActionPerformed
+        // TODO add your handling code here:
+        int selectItem = jComboBox2.getSelectedIndex();
+        if (selectItem != -1) {
+            String fontFamilyName = (String) jComboBox2.getSelectedItem();
+            textFont = new Font(fontFamilyName, Font.PLAIN, textFont.getSize());
+        }
+        updateTextFont();
+    }//GEN-LAST:event_jComboBox2ActionPerformed
+
+    private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
+        // TODO add your handling code here:
+        int selectItem = jComboBox1.getSelectedIndex();
+        if (selectItem != -1) {
+            String fontFamilyName = (String) jComboBox1.getSelectedItem();
+            uiFont = new Font(fontFamilyName, Font.PLAIN, uiFont.getSize());
+        }
+        updateUIFont();
+    }//GEN-LAST:event_jComboBox1ActionPerformed
+
+    private void jSlider1StateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_jSlider1StateChanged
+        // TODO add your handling code here:
+        int value = jSlider1.getValue();
+        uiFont = uiFont.deriveFont((float) value);
+        updateUIFont();
+    }//GEN-LAST:event_jSlider1StateChanged
+
+    private void jCheckBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox1ActionPerformed
+        // TODO add your handling code here:
+        speechSynthesis = jCheckBox1.isSelected();
+    }//GEN-LAST:event_jCheckBox1ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -1346,6 +1435,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton5;
     private javax.swing.JButton jButton6;
+    private javax.swing.JCheckBox jCheckBox1;
     private javax.swing.JComboBox jComboBox1;
     private javax.swing.JComboBox jComboBox2;
     private javax.swing.JFrame jFrame1;
@@ -1374,6 +1464,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;

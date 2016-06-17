@@ -59,8 +59,8 @@ class ScoreEstimator {
 
     public double estimateScore(WordProperty[] w){
         double[] vector = calcFeatureVector(w);
- 	double score = calcScore(vector);
-
+        double score = calcScore(vector);
+        
 	return score;
     }
     

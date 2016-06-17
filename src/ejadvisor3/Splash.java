@@ -28,7 +28,7 @@ public class Splash extends JWindow {
         Icon icon = new ImageIcon(basedir+"splash.png");
         JLabel lab = new JLabel(icon);
         content.add(lab);
-        message = new JLabel("初期化しています．．．");
+        message = new JLabel("起動しています...");
         content.add(message);
         //progress = new JProgressBar(JProgressBar.HORIZONTAL);
         //content.add(progress);

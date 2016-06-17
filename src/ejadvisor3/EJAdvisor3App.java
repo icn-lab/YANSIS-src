@@ -40,6 +40,14 @@ public class EJAdvisor3App {
     void initialize(String args[]) {
         showSplash();
         ejadv3 = new EJAdvisor3(base);
+        splash.setMessage("語彙ファイルを読み込んでいます...");
+        ejadv3.loadVocab();
+        splash.setMessage("Senを読み込んでいます...");
+        ejadv3.loadSen();
+        splash.setMessage("アドバイスを読み込んでいます...");
+        ejadv3.loadRecommend();
+        splash.setMessage("スコア解析器を読み込んでいます...");
+        ejadv3.loadScoreEstimator();
         hideSplash();
     }
       
