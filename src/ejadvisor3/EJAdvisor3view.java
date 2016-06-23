@@ -102,7 +102,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         // フォント反映(InitSettings())前に hanasu を new する必要がある
         hanasu = new Hanasu();
         hanasu.initialize(ejadv3.getBaseDir(), properties);
-
+        hanasu.setMoraSpeed(360);
         // フォント反映
         initSettings();
 
@@ -591,12 +591,17 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
                 evaluationPoints += advice[i] + "<br/>";
             }
         }
+        //hanasu.setMoraSpeed(scoreToMoraSpeed(score));  
         setAnalysisResult(res);
         setAnalysisPoint(evaluationPoints);
         hanasu.setTextFeature(feature);
         showMessage("");
     }
 
+    public int scoreToMoraSpeed(double score){
+        return 360;
+    }
+    
     /**
      * 入力テキストを結果ウィンドウに追加
      */

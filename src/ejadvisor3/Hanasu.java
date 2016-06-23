@@ -67,7 +67,7 @@ public class Hanasu {
         if (this.baseDir.endsWith("/") == false) {
             this.baseDir += "/";
         }
-        
+
         // initialize Gyutan;
         gyutan = new Gyutan();
 
@@ -95,7 +95,7 @@ public class Hanasu {
          if(senHome != null)
          gyutan.initializeSen(senHome);
          */
-		//gyutan.initializeSen(baseDir+senHome);
+        //gyutan.initializeSen(baseDir+senHome);
 
         String moraSpeed = property.getProperty("moraSpeed");
         if (moraSpeed != null) {
@@ -174,7 +174,7 @@ public class Hanasu {
         fileMenu = new JMenu("ファイル");
 //		editMenu   = new JMenu("編集");
         configMenu = new JMenu("設定");
-		//helpMenu   = new JMenu("ヘルプ");
+        //helpMenu   = new JMenu("ヘルプ");
 
         menuItemSave = new JMenuItem("Save WAV");
         menuItemSave.addActionListener(new ActionListener() {
@@ -244,7 +244,7 @@ public class Hanasu {
         menuBar.add(fileMenu);
         //menuBar.add(editMenu);
         menuBar.add(configMenu);
-		//menuBar.add(helpMenu);
+        //menuBar.add(helpMenu);
 
         panel.add("North", menuBar);
         panel.add("Center", scrollPane);
@@ -280,7 +280,7 @@ public class Hanasu {
     }
 
     private void updateUIFont() {
-             //System.out.println("Font:"+textFont.getFamily());
+        //System.out.println("Font:"+textFont.getFamily());
         //System.out.println("Size:"+textFont.getSize());
         for (JComponent component : uiFontComponents) {
             component.setFont(uiFont);

@@ -29,6 +29,7 @@ public class Splash extends JWindow {
         JLabel lab = new JLabel(icon);
         content.add(lab);
         message = new JLabel("起動しています...");
+        message.setFont(message.getFont().deriveFont(14.0f));
         content.add(message);
         //progress = new JProgressBar(JProgressBar.HORIZONTAL);
         //content.add(progress);
