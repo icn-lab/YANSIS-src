@@ -111,10 +111,10 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         // フォント反映(InitSettings())前に hanasu を new する必要がある
         String propHTSVoice = properties.getProperty(PROPERTY_HTSVOICE);
         if (propHTSVoice != null) {
-            htsVoice = propHTSVoice;
+            setHTSVoiceDir(propHTSVoice);
         } else {
             File f = new File(ejadv3.getBaseDir() + htsVoice);
-            htsVoice = f.getPath();
+            setHTSVoiceDir(f.getPath());
         }
 
         hanasu = new Hanasu(htsVoice);
@@ -1000,7 +1000,6 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         jLabel23.setText("モーラ/分");
         jLabel23.setEnabled(false);
 
-        jLabel24.setText(htsVoice);
         jLabel24.setEnabled(false);
 
         jButton9.setText("参照");
@@ -1576,11 +1575,10 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
        fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
         int selected = fc.showOpenDialog(jPanel2);
         if (selected == JFileChooser.APPROVE_OPTION) {
-            htsVoice = fc.getSelectedFile().getPath();
-            jLabel24.setText(htsVoice);
-            hanasu = new Hanasu(htsVoice);
+            String tmpVoice = fc.getSelectedFile().getPath();
+            hanasu = new Hanasu(tmpVoice);
             if (hanasu.gyutan.availableEngine()) {
-                setHTSVoiceProperties();
+                setHTSVoiceDir(tmpVoice);
             }
             synthesisDone = false;
             setWAVMenuState();
@@ -1622,6 +1620,12 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         jMenuItem2.setEnabled(synthesisDone);
     }
 
+    private void setHTSVoiceDir(String s){
+        htsVoice = s;
+        jLabel24.setText(htsVoice);
+        setHTSVoiceProperties();
+    }
+    
     /**
      * @param args the command line arguments
      */
