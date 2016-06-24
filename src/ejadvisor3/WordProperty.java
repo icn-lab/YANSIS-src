@@ -73,7 +73,8 @@ public class WordProperty {
                 posElem[0].equals("連体詞") || posElem[0].equals("接続詞")) {
             if (posElem.length > 1 && 
                     (posElem[1].equals("非自立") ||
-                     posElem[1].equals("接尾")))
+                     posElem[1].equals("接尾") || 
+                     posElem[1].equals("数")))
                 return false;
             else
                 return true;

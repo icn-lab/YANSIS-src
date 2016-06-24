@@ -38,18 +38,17 @@ import javax.swing.text.JTextComponent;
  */
 public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI {
 
-    static final String TITLE  = "EJAdvisor version 1.4";
+    static final String TITLE = "EJAdvisor version 1.4";
     static final String author = "作者: 伊藤 彰則";
-    static final String copyrightTextToSpeech ="音声合成には以下のソフトウェアを使用しています\nGyutan, Sasakama:\nCopyright(c) 2015 東北大学 伊藤・能勢研究室\nCopyright(c) 2008-2015 名古屋工業大学 徳田・南角研究室";
-    
+    static final String copyrightTextToSpeech = "音声合成には以下のソフトウェアを使用しています\nGyutan, Sasakama:\nCopyright(c) 2015 東北大学 伊藤・能勢研究室\nCopyright(c) 2008-2015 名古屋工業大学 徳田・南角研究室";
+
     private final String propertyFile = ".EJAdvisor3.properties";
     private final String PROPERTY_UIFONT_FAMILY = "UI_FONT_FAMILY";
     private final String PROPERTY_UIFONT_SIZE = "UI_FONT_SIZE";
     private final String PROPERTY_TEXTFONT_FAMILY = "TEXT_FONT_FAMILY";
     private final String PROPERTY_TEXTFONT_SIZE = "TEXT_FONT_SIZE";
+    private final String PROPERTY_HTSVOICE = "HTSVOICE";
 
-    private boolean speechSynthesis;
-    private boolean dataCreated;
     private final FileSaver fileSaver;
     private EJAdvisor3App app;
     private EJAdvisor3 ejadv3;
@@ -57,6 +56,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     private JTextComponent currentFocus; //現在フォーカスのあるTextComponent;
     private Hanasu hanasu;
 
+    private String htsVoice = "htsvoice/tohoku-f01-neutral.htsvoice";
     private String[] fontList = {"メイリオ", "ＭＳ ゴシック", "OSAKA"};
     private String[] uiFontList = {"Meiryo UI", "MS UI Gothic", "OSAKA"};
 
@@ -81,6 +81,15 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     private String[] availableFontFamilyNames;
     private Properties properties;
 
+    private Boolean dataCreated = false;
+    private Boolean synthesisDone = false;
+    private Boolean ttsEnable = false;
+    private Boolean analysisDone = false;
+
+    private int moraSpeedMin = 200;
+    private int moraSpeedMax = 700;
+    private int moraSpeed;
+
     /**
      * Creates new form EJAdvisor3view
      */
@@ -90,7 +99,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
 
         // 保存されている property の読み込み
         loadProperties();
-        
+
         // Font設定
         setDefaultFont();
         initFont();
@@ -100,15 +109,20 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
 
         // 音声合成機能 
         // フォント反映(InitSettings())前に hanasu を new する必要がある
-        hanasu = new Hanasu();
-        hanasu.initialize(ejadv3.getBaseDir(), properties);
-        hanasu.setMoraSpeed(360);
+        String propHTSVoice = properties.getProperty(PROPERTY_HTSVOICE);
+        if (propHTSVoice != null) {
+            htsVoice = propHTSVoice;
+        } else {
+            File f = new File(ejadv3.getBaseDir() + htsVoice);
+            htsVoice = f.getPath();
+        }
+
+        hanasu = new Hanasu(htsVoice);
+        moraSpeed = 360;
+        setMoraSpeed();
+
         // フォント反映
         initSettings();
-
-        // フラグ設定
-        dataCreated     = false;
-        speechSynthesis = false;
 
         setTitle(TITLE);
 
@@ -179,7 +193,6 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     }
 
     // Windowを閉じるときの確認
-
     public void windowClosingConfirmation() {
         if (dataCreated) {
             //System.out.println("Data created");
@@ -233,6 +246,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         uiFontComponents.add(jLabel5);
         uiFontComponents.add(jButton4);
         uiFontComponents.add(jButton3);
+        uiFontComponents.add(jButton8);
         uiFontComponents.add(jTabbedPane1);
         uiFontComponents.add(jLabel13);
         uiFontComponents.add(jLabel12);
@@ -251,6 +265,10 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         uiFontComponents.add(jButton5);
         uiFontComponents.add(jButton6);
         uiFontComponents.add(jCheckBox1);
+        uiFontComponents.add(jTextField1);
+        uiFontComponents.add(jLabel22);
+        uiFontComponents.add(jLabel25);
+        uiFontComponents.add(jButton9);
 
         textFontComponents.add(inputText);
         textFontComponents.add(analysisPane);
@@ -279,6 +297,8 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         uiSmallFontComponents.add(jMenuItem1);
         uiSmallFontComponents.add(contentsMenuItem);
         uiSmallFontComponents.add(aboutMenuItem);
+        uiSmallFontComponents.add(jLabel23);
+        uiSmallFontComponents.add(jLabel24);
 
         updateTextFont();
         updateUIFont();
@@ -303,7 +323,6 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         for (JComponent component : textFontComponents) {
             component.setFont(textFont);
         }
-        hanasu.setTextFont(textFont);
 
         mpWordTitle.setFont(textFont.deriveFont(Font.BOLD, (float) fontPlus + textFont.getSize()));
 
@@ -324,13 +343,9 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
             component.setFont(uiFont);
         }
 
-        hanasu.setUIFont(uiFont);
-
         for (JComponent component : uiSmallFontComponents) {
             component.setFont(uiFont.deriveFont(Font.PLAIN, (float) -fontMinus + uiFont.getSize()));
         }
-
-        hanasu.setUISmallFont(uiSmallFontComponents.get(0).getFont());
 
         jLabel18.setFont(uiFont.deriveFont(Font.PLAIN, (float) -fontSmall + uiFont.getSize()));
         jLabel20.setFont(uiFont.deriveFont(Font.PLAIN, (float) -fontSmall + uiFont.getSize()));
@@ -395,6 +410,10 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     private void setTextFontProperties() {
         properties.setProperty(PROPERTY_TEXTFONT_FAMILY, textFont.getFamily());
         properties.setProperty(PROPERTY_TEXTFONT_SIZE, String.valueOf(textFont.getSize()));
+    }
+
+    private void setHTSVoiceProperties() {
+        properties.setProperty(PROPERTY_HTSVOICE, htsVoice);
     }
 
     /*
@@ -530,7 +549,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     public void doAnalysis() throws UnsupportedEncodingException {
         showMessage("テキスト解析中...");
         WordProperty[][] currentSent = ejadv3.doAnalysis(inputText.getText());
-        String[] feature = hanasu.gyutan.tokenToString(ejadv3.getTokens());
+
         /*
          for(int i=0;i < feature.length;i++)
          System.err.println(feature[i]);
@@ -594,14 +613,13 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         //hanasu.setMoraSpeed(scoreToMoraSpeed(score));  
         setAnalysisResult(res);
         setAnalysisPoint(evaluationPoints);
-        hanasu.setTextFeature(feature);
         showMessage("");
     }
 
-    public int scoreToMoraSpeed(double score){
+    public int scoreToMoraSpeed(double score) {
         return 360;
     }
-    
+
     /**
      * 入力テキストを結果ウィンドウに追加
      */
@@ -672,9 +690,17 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         jButton6 = new javax.swing.JButton();
         jPanel2 = new javax.swing.JPanel();
         jCheckBox1 = new javax.swing.JCheckBox();
+        jSlider3 = new javax.swing.JSlider();
+        jLabel22 = new javax.swing.JLabel();
+        jTextField1 = new javax.swing.JTextField();
+        jLabel23 = new javax.swing.JLabel();
+        jLabel24 = new javax.swing.JLabel();
+        jButton9 = new javax.swing.JButton();
+        jLabel25 = new javax.swing.JLabel();
         jButton5 = new javax.swing.JButton();
         jLabel11 = new javax.swing.JLabel();
         jMenu1 = new javax.swing.JMenu();
+        jButton7 = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
@@ -694,11 +720,13 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         jScrollPane9 = new javax.swing.JScrollPane();
         exampleSentenceArea = new javax.swing.JTextArea();
         statusMessageLabel = new javax.swing.JLabel();
+        jButton8 = new javax.swing.JButton();
         menuBar = new javax.swing.JMenuBar();
         fileMenu = new javax.swing.JMenu();
         openMenuItem = new javax.swing.JMenuItem();
         saveMenuItem = new javax.swing.JMenuItem();
         saveAsMenuItem = new javax.swing.JMenuItem();
+        jMenuItem2 = new javax.swing.JMenuItem();
         exitMenuItem = new javax.swing.JMenuItem();
         editMenu = new javax.swing.JMenu();
         cutMenuItem = new javax.swing.JMenuItem();
@@ -890,7 +918,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addComponent(jLabel20)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jSlider2, javax.swing.GroupLayout.DEFAULT_SIZE, 515, Short.MAX_VALUE)
+                                .addComponent(jSlider2, javax.swing.GroupLayout.DEFAULT_SIZE, 537, Short.MAX_VALUE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jLabel21))
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
@@ -949,21 +977,93 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
             }
         });
 
+        jSlider3.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                jSlider3StateChanged(evt);
+            }
+        });
+        jSlider3.setMaximum(moraSpeedMax);
+        jSlider3.setMinimum(moraSpeedMin);
+        jSlider3.setToolTipText("");
+        jSlider3.setEnabled(false);
+
+        jLabel22.setText("話速");
+        jLabel22.setEnabled(false);
+
+        jTextField1.setEnabled(false);
+        jTextField1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField1ActionPerformed(evt);
+            }
+        });
+
+        jLabel23.setText("モーラ/分");
+        jLabel23.setEnabled(false);
+
+        jLabel24.setText(htsVoice);
+        jLabel24.setEnabled(false);
+
+        jButton9.setText("参照");
+        jButton9.setEnabled(false);
+        jButton9.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton9ActionPerformed(evt);
+            }
+        });
+
+        jLabel25.setText("HTSVoice");
+        jLabel25.setEnabled(false);
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+                .addGap(0, 0, Short.MAX_VALUE)
+                .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jLabel23)
+                .addGap(59, 59, 59))
             .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jCheckBox1)
-                .addContainerGap(522, Short.MAX_VALUE))
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGap(35, 35, 35)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(jSlider3, javax.swing.GroupLayout.DEFAULT_SIZE, 560, Short.MAX_VALUE)
+                            .addComponent(jLabel24, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jButton9))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(jCheckBox1))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(jLabel22))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(jLabel25)))
+                .addContainerGap(13, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addGap(14, 14, 14)
                 .addComponent(jCheckBox1)
-                .addContainerGap(425, Short.MAX_VALUE))
+                .addGap(77, 77, 77)
+                .addComponent(jLabel22)
+                .addGap(15, 15, 15)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel23))
+                .addGap(43, 43, 43)
+                .addComponent(jSlider3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 100, Short.MAX_VALUE)
+                .addComponent(jLabel25)
+                .addGap(18, 18, 18)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel24)
+                    .addComponent(jButton9))
+                .addGap(80, 80, 80))
         );
 
         jTabbedPane1.addTab("音声合成", jPanel2);
@@ -998,6 +1098,8 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
 
         jMenu1.setText("jMenu1");
 
+        jButton7.setText("jButton7");
+
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         jLabel1.setText("入力文");
@@ -1029,6 +1131,11 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         inputText.addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusGained(java.awt.event.FocusEvent evt) {
                 inputTextFocusGained(evt);
+            }
+        });
+        inputText.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                inputTextPropertyChange(evt);
             }
         });
         jScrollPane2.setViewportView(inputText);
@@ -1073,6 +1180,14 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
 
         statusMessageLabel.setText("Ready");
 
+        jButton8.setText("音声合成");
+        jButton8.setEnabled(false);
+        jButton8.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton8ActionPerformed(evt);
+            }
+        });
+
         fileMenu.setMnemonic('f');
         fileMenu.setText("ファイル");
 
@@ -1097,6 +1212,15 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
             }
         });
         fileMenu.add(saveAsMenuItem);
+
+        jMenuItem2.setText("WAVを保存");
+        jMenuItem2.setEnabled(false);
+        jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem2ActionPerformed(evt);
+            }
+        });
+        fileMenu.add(jMenuItem2);
 
         exitMenuItem.setMnemonic('x');
         exitMenuItem.setText("終了");
@@ -1190,18 +1314,6 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(jLabel1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jScrollPane2)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jButton1)
-                            .addComponent(jButton2)))
-                    .addComponent(jLabel2))
-                .addContainerGap())
             .addComponent(jScrollPane1)
             .addComponent(jScrollPane3)
             .addGroup(layout.createSequentialGroup()
@@ -1221,17 +1333,34 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jLabel5)
                         .addGap(0, 0, Short.MAX_VALUE))))
+            .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jLabel1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jScrollPane2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addComponent(jButton8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                    .addComponent(jLabel2))
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel1)
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 100, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jButton1)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel1)
+                            .addComponent(jButton1))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton2))
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 100, Short.MAX_VALUE))
+                        .addComponent(jButton2)
+                        .addGap(16, 16, 16)
+                        .addComponent(jButton8)
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -1268,6 +1397,8 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         try {
             doAnalysis();
+            analysisDone = true;
+            setSynthesisButtonState();
         } catch (UnsupportedEncodingException ex) {
             showMessage(ex.toString());
         }
@@ -1278,7 +1409,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     }//GEN-LAST:event_saveAsMenuItemActionPerformed
 
     private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutMenuItemActionPerformed
-        JOptionPane.showMessageDialog(this, TITLE+"\n"+author+"\n\n\n"+copyrightTextToSpeech, "このソフトウェアについて", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, TITLE + "\n" + author + "\n\n\n" + copyrightTextToSpeech, "このソフトウェアについて", JOptionPane.INFORMATION_MESSAGE);
     }//GEN-LAST:event_aboutMenuItemActionPerformed
 
     private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMenuItemActionPerformed
@@ -1351,15 +1482,13 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         rewindUsableWords();
     }//GEN-LAST:event_jButton3ActionPerformed
 
-    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+    private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {
         // TODO add your handling code here:
-        jFrame1.setVisible(false);
-        if (speechSynthesis) {
-            hanasu.setVisible(true);
-        } else {
-            hanasu.setVisible(false);
-        }
-    }//GEN-LAST:event_jButton5ActionPerformed
+        hanasu.setTokens(ejadv3.getTokens());
+        hanasu.doSynthesize(moraSpeed);
+        synthesisDone = true;
+        setWAVMenuState();
+    }
 
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
         // TODO add your handling code here:
@@ -1412,8 +1541,86 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
 
     private void jCheckBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox1ActionPerformed
         // TODO add your handling code here:
-        speechSynthesis = jCheckBox1.isSelected();
+        ttsEnable = jCheckBox1.isSelected();
+        jTextField1.setEnabled(ttsEnable);
+        jSlider3.setEnabled(ttsEnable);
+        jLabel22.setEnabled(ttsEnable);
+        jLabel23.setEnabled(ttsEnable);
+        jLabel24.setEnabled(ttsEnable);
+        jLabel25.setEnabled(ttsEnable);
+        jButton9.setEnabled(ttsEnable);
+        setSynthesisButtonState();
     }//GEN-LAST:event_jCheckBox1ActionPerformed
+
+    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+        // TODO add your handling code here:
+        jFrame1.setVisible(false);
+    }//GEN-LAST:event_jButton5ActionPerformed
+
+    private void inputTextPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_inputTextPropertyChange
+        // TODO add your handling code here:
+        analysisDone = false;
+        setSynthesisButtonState();
+    }//GEN-LAST:event_inputTextPropertyChange
+
+    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
+        // TODO add your handling code here:
+        moraSpeed = Integer.parseInt(jTextField1.getText());
+        //System.err.println("jTextField:");
+        setMoraSpeed();
+    }//GEN-LAST:event_jTextField1ActionPerformed
+
+    private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
+        // TODO add your handling code here:
+        JFileChooser fc = new JFileChooser(ejadv3.getBaseDir());
+       fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        int selected = fc.showOpenDialog(jPanel2);
+        if (selected == JFileChooser.APPROVE_OPTION) {
+            htsVoice = fc.getSelectedFile().getPath();
+            jLabel24.setText(htsVoice);
+            hanasu = new Hanasu(htsVoice);
+            if (hanasu.gyutan.availableEngine()) {
+                setHTSVoiceProperties();
+            }
+            synthesisDone = false;
+            setWAVMenuState();
+        }
+    }//GEN-LAST:event_jButton9ActionPerformed
+
+    private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
+        // TODO add your handling code here:
+        JFileChooser fc = new JFileChooser(ejadv3.getBaseDir());
+        fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        int selected = fc.showSaveDialog(fileMenu);
+        if (selected == JFileChooser.APPROVE_OPTION) {
+            hanasu.saveWAV(fc.getSelectedFile().getPath());
+        }
+    }//GEN-LAST:event_jMenuItem2ActionPerformed
+
+    private void jSlider3StateChanged(javax.swing.event.ChangeEvent evt) {
+        // TODO add your handling code here:
+        moraSpeed = jSlider3.getValue();
+        //System.err.println("jSlider:");
+        setMoraSpeed();
+    }
+
+    private void setSynthesisButtonState() {
+        if (ttsEnable && analysisDone) {
+            jButton8.setEnabled(true);
+        } else {
+            jButton8.setEnabled(false);
+        }
+    }
+
+    private void setMoraSpeed() {
+        jTextField1.setText(Integer.toString(moraSpeed));
+        jSlider3.setValue(moraSpeed);
+        System.out.printf("moraSpeed is %d\n", moraSpeed);
+    }
+
+    private void setWAVMenuState() {
+        jMenuItem2.setEnabled(synthesisDone);
+    }
 
     /**
      * @param args the command line arguments
@@ -1440,6 +1647,9 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton5;
     private javax.swing.JButton jButton6;
+    private javax.swing.JButton jButton7;
+    private javax.swing.JButton jButton8;
+    private javax.swing.JButton jButton9;
     private javax.swing.JCheckBox jCheckBox1;
     private javax.swing.JComboBox jComboBox1;
     private javax.swing.JComboBox jComboBox2;
@@ -1458,6 +1668,10 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel20;
     private javax.swing.JLabel jLabel21;
+    private javax.swing.JLabel jLabel22;
+    private javax.swing.JLabel jLabel23;
+    private javax.swing.JLabel jLabel24;
+    private javax.swing.JLabel jLabel25;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
@@ -1468,6 +1682,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuItem jMenuItem1;
+    private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JScrollPane jScrollPane1;
@@ -1478,7 +1693,9 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSlider jSlider1;
     private javax.swing.JSlider jSlider2;
+    private javax.swing.JSlider jSlider3;
     private javax.swing.JTabbedPane jTabbedPane1;
+    private javax.swing.JTextField jTextField1;
     private javax.swing.JMenuBar menuBar;
     private javax.swing.JDialog morphemeInfoPopup;
     private javax.swing.JLabel mpBasicForm;
