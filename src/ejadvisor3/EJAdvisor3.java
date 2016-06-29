@@ -262,11 +262,24 @@ public class EJAdvisor3 {
         return sb.toString();
     }
 
-    public static String replace(String text) {
+    public String replace(String text) {
         for (int i = 0; i < REPLACE.length; i += 2) {
             text = text.replaceAll(REPLACE[i], REPLACE[i + 1]);
         }
 
         return text;
     }
+    /*
+    public void setPronunciation(int s, int i, String pron){
+        int pos = 0;
+        
+        for(int j=0;j < s;j++)
+            pos += currentSent[s].length;
+        pos += i;
+        
+        System.err.printf("current:%s -> ", toks[pos].getTermInfo(), pron);
+        toks[pos].setPronunciation(pron);
+        System.err.printf("change:%s\n", toks[pos].getTermInfo());
+    }
+    */
 }

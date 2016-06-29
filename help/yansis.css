@@ -1,0 +1,83 @@
+/* yansis.css */
+/* for YANSIS html documents */
+
+/* body */
+body {
+    color: #000000;
+    background-color: #ffffcc;
+    line-height: 150%;
+}
+
+/* h1~h6 */
+h1 {
+    border-bottom: solid 3px #00aa00;
+    padding-bottom: 5px;
+    margin-top: 30px;
+    margin-bottom: 30px;
+}
+
+h2 {
+    padding-left: 5px;
+    padding-bottom: 5px;
+    margin-left: 5px;
+    margin-bottom: 15px;
+    margin-top: 15px;
+    border-left: solid 8px #00aa00;
+    border-bottom: solid 2px #00aa00;
+}
+
+h3 {
+    padding-left: 10px;
+    padding-bottom: 5px;
+    margin-left: 10px;
+    margin-bottom: 15px;
+    margin-top: 15px;
+    border-left: solid 8px #00aa00;
+}
+
+h4 {
+    margin-bottom: 15px;
+    margin-top: 15px;
+    padding-left: 15px;
+}
+
+h5 {
+    margin-bottom: 15px;
+    margin-top: 15px;
+    padding-left: 20px;
+}
+
+h6 {
+    margin-bottom: 15px;
+    margin-top: 15px;
+    padding-left: 25px;
+}
+
+p {
+    padding-top:  1px;
+    padding-left: 10px;
+    padding-bottom: 1px;
+}
+
+span.emphasize {
+    font-weight: bold;
+    color: #ee0000;
+}
+
+table.dld {
+    border: solid 3px #00aa00; 
+    border-collapse: collapse;
+}
+
+th.dld {
+    color: #ffffff;
+    background-color: #00aa00;
+    border: solid 1px #aaaaaa;
+    padding: 5px;
+}
+
+td.dld {
+    border: solid 1px #aaaaaa;
+    text-align: center;
+    padding: 10px;
+}

@@ -25,20 +25,22 @@ import net.java.sen.Token;
  * @author nagano
  */
 public class Hanasu {
+
     Gyutan gyutan;
     String[] feature;
     double ratio = 1.0;
 
-    public Hanasu(String htsVoice) {        
+    public Hanasu(String htsVoice) {
         // initialize Gyutan;
         gyutan = new Gyutan();
         gyutan.initializeEngine(htsVoice);
     }
 
     public void doSynthesize(int speed) {
-        if (feature == null) 
+        if (feature == null) {
             return;
- 
+        }
+
         gyutan.make_label(feature);
 
         int sp1 = synthesizeAndCalcMoraSpeed(ratio);
@@ -82,54 +84,61 @@ public class Hanasu {
 
         return label.getMoraSpeed();
     }
-/*
-    public void setHTSVoice() {
-        JFileChooser fileChooser = new JFileChooser(htsVoiceDir);
-        fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+    /*
+     public void setHTSVoice() {
+     JFileChooser fileChooser = new JFileChooser(htsVoiceDir);
+     fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 
-        // add .htsvoice extension filter
-        FileFilter filter = new FileNameExtensionFilter("htsvoice file", "htsvoice");
-        fileChooser.addChoosableFileFilter(filter);
+     // add .htsvoice extension filter
+     FileFilter filter = new FileNameExtensionFilter("htsvoice file", "htsvoice");
+     fileChooser.addChoosableFileFilter(filter);
 
-        while (true) {
-            int selected = fileChooser.showOpenDialog(frame);
-            if (selected == JFileChooser.APPROVE_OPTION) {
-                htsVoice = fileChooser.getSelectedFile().toString();
-                gyutan.initializeEngine(htsVoice);
-                if (gyutan.availableEngine()) {
-                    property.setProperty("htsVoice", htsVoice);
-                    break;
-                }
-            } else {
-                break;
-            }
-        }
+     while (true) {
+     int selected = fileChooser.showOpenDialog(frame);
+     if (selected == JFileChooser.APPROVE_OPTION) {
+     htsVoice = fileChooser.getSelectedFile().toString();
+     gyutan.initializeEngine(htsVoice);
+     if (gyutan.availableEngine()) {
+     property.setProperty("htsVoice", htsVoice);
+     break;
+     }
+     } else {
+     break;
+     }
+     }
 
-        setSynthesizeButtonState();
-    }
-*/
-   public void saveWAV(String filename){
-       try{
-           gyutan.save_riff(new FileOutputStream(filename));
-       } catch(Exception e){
-           e.printStackTrace();
-       }
-   }
-   /*
-    public void saveWAV() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        int selected = fileChooser.showSaveDialog(frame);
+     setSynthesizeButtonState();
+     }
+     */
+
+    public void saveWAV(String filename) {
         try {
-            if (selected == JFileChooser.APPROVE_OPTION) {
-                gyutan.save_riff(new FileOutputStream(fileChooser.getSelectedFile()));
-            }
+            gyutan.save_riff(new FileOutputStream(filename));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-*/
-    public void setTokens(Token[] toks){
+    /*
+     public void saveWAV() {
+     JFileChooser fileChooser = new JFileChooser();
+     fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+     int selected = fileChooser.showSaveDialog(frame);
+     try {
+     if (selected == JFileChooser.APPROVE_OPTION) {
+     gyutan.save_riff(new FileOutputStream(fileChooser.getSelectedFile()));
+     }
+     } catch (Exception e) {
+     e.printStackTrace();
+     }
+     }
+     */
+
+    public void setTokens(Token[] toks) {
         feature = gyutan.tokenToString(toks);
-    }    
+        /*
+         for(int i=0;i < feature.length;i++){
+         System.err.printf("%d:%s\n", i, feature[i]);
+         }
+         */
+    }
 }

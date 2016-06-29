@@ -40,7 +40,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
 
     static final String TITLE = "EJAdvisor version 1.4";
     static final String author = "作者: 伊藤 彰則";
-    static final String copyrightTextToSpeech = "音声合成には以下のソフトウェアを使用しています\nGyutan, Sasakama:\nCopyright(c) 2015 東北大学 伊藤・能勢研究室\nCopyright(c) 2008-2015 名古屋工業大学 徳田・南角研究室";
+    //static final String copyrightTextToSpeech = "Gyutan:\nCopyright(c) 2015 Intelligent Communication Network (Ito-Nose) Laboratory Tohoku University.\nCopyright(c) 2001-2015 Nagoya Institute of Technology Department of Computer Science.\n\nSasakama:\nCopyright(c) 2015 Intelligent Communication Network (Ito-Nose) Laboratory Tohoku University.\nCopyright(c) 2001-2015 Nagoya Institute of Technology Department of Computer Science.\nCopyright(c) 2001-2008 Tokyo Institute of Technology Interdisciplinary Graduate School of Science and Engineering. \n";
 
     private final String propertyFile = ".EJAdvisor3.properties";
     private final String PROPERTY_UIFONT_FAMILY = "UI_FONT_FAMILY";
@@ -53,6 +53,8 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     private EJAdvisor3App app;
     private EJAdvisor3 ejadv3;
     private WordProperty currentPopup; //現在ポップアップしている単語
+    private int popupSentence;
+    private int popupWord;
     private JTextComponent currentFocus; //現在フォーカスのあるTextComponent;
     private Hanasu hanasu;
 
@@ -188,6 +190,8 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
                 morphemeInfoPopup.pack();
                 morphemeInfoPopup.setVisible(true);
                 currentPopup = w;
+                popupSentence = s;
+                popupWord = i;
             }
         }
     }
@@ -663,13 +667,13 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         mpPOS = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
         mpForm = new javax.swing.JLabel();
-        mpPronunciation = new javax.swing.JLabel();
         jLabel9 = new javax.swing.JLabel();
         jLabel10 = new javax.swing.JLabel();
         mpGrade = new javax.swing.JLabel();
         jButton3 = new javax.swing.JButton();
         jButton4 = new javax.swing.JButton();
         filler1 = new javax.swing.Box.Filler(new java.awt.Dimension(100, 0), new java.awt.Dimension(100, 0), new java.awt.Dimension(100, 32767));
+        mpPronunciation = new javax.swing.JLabel();
         jFrame1 = new javax.swing.JFrame("設定");
         jTabbedPane1 = new javax.swing.JTabbedPane();
         jPanel1 = new javax.swing.JPanel();
@@ -756,8 +760,6 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
 
         mpForm.setText("jLabel9");
 
-        mpPronunciation.setText("xxx");
-
         jLabel9.setText("読み");
 
         jLabel10.setText("級");
@@ -777,6 +779,8 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
                 jButton4ActionPerformed(evt);
             }
         });
+
+        mpPronunciation.setText("jLabel26");
 
         javax.swing.GroupLayout morphemeInfoPopupLayout = new javax.swing.GroupLayout(morphemeInfoPopup.getContentPane());
         morphemeInfoPopup.getContentPane().setLayout(morphemeInfoPopupLayout);
@@ -806,7 +810,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jButton4))))
                     .addGroup(morphemeInfoPopupLayout.createSequentialGroup()
-                        .addGap(81, 81, 81)
+                        .addGap(70, 70, 70)
                         .addComponent(mpWordTitle))
                     .addComponent(filler1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(15, 15, 15))
@@ -832,8 +836,8 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
                     .addComponent(mpForm))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(morphemeInfoPopupLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(mpPronunciation)
-                    .addComponent(jLabel9))
+                    .addComponent(jLabel9)
+                    .addComponent(mpPronunciation))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(morphemeInfoPopupLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel10)
@@ -1408,7 +1412,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     }//GEN-LAST:event_saveAsMenuItemActionPerformed
 
     private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutMenuItemActionPerformed
-        JOptionPane.showMessageDialog(this, TITLE + "\n" + author + "\n\n\n" + copyrightTextToSpeech, "このソフトウェアについて", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, TITLE + "\n" + author, "このソフトウェアについて", JOptionPane.INFORMATION_MESSAGE);
     }//GEN-LAST:event_aboutMenuItemActionPerformed
 
     private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMenuItemActionPerformed
@@ -1463,23 +1467,6 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     private void pasteMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_pasteMenuItemActionPerformed
         currentFocus.paste();
     }//GEN-LAST:event_pasteMenuItemActionPerformed
-
-    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-        morphemeInfoPopup.setVisible(false);
-    }//GEN-LAST:event_jButton4ActionPerformed
-
-    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-        EJExample[] res = ejadv3.exampleSentence(currentPopup);
-        setUsableWords("");
-        if (res == null || res[0] == null) {
-            appendUsableWords("<<該当なし>>");
-            return;
-        }
-        for (int i = 0; i < res.length; i++) {
-            appendUsableWords(res[i].EJ() + "\n");
-        }
-        rewindUsableWords();
-    }//GEN-LAST:event_jButton3ActionPerformed
 
     private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {
         // TODO add your handling code here:
@@ -1572,7 +1559,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
         // TODO add your handling code here:
         JFileChooser fc = new JFileChooser(ejadv3.getBaseDir());
-       fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
         int selected = fc.showOpenDialog(jPanel2);
         if (selected == JFileChooser.APPROVE_OPTION) {
             String tmpVoice = fc.getSelectedFile().getPath();
@@ -1594,6 +1581,23 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
             hanasu.saveWAV(fc.getSelectedFile().getPath());
         }
     }//GEN-LAST:event_jMenuItem2ActionPerformed
+
+    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+        morphemeInfoPopup.setVisible(false);
+    }//GEN-LAST:event_jButton4ActionPerformed
+
+    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+        EJExample[] res = ejadv3.exampleSentence(currentPopup);
+        setUsableWords("");
+        if (res == null || res[0] == null) {
+            appendUsableWords("<<該当なし>>");
+            return;
+        }
+        for (int i = 0; i < res.length; i++) {
+            appendUsableWords(res[i].EJ() + "\n");
+        }
+        rewindUsableWords();
+    }//GEN-LAST:event_jButton3ActionPerformed
 
     private void jSlider3StateChanged(javax.swing.event.ChangeEvent evt) {
         // TODO add your handling code here:
@@ -1629,7 +1633,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     /**
      * @param args the command line arguments
      */
-
+    
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenuItem aboutMenuItem;
     private javax.swing.JEditorPane analysisPane;

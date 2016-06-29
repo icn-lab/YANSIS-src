@@ -31,7 +31,7 @@
                                       <Component id="mpForm" min="-2" max="-2" attributes="0"/>
                                       <Component id="mpPOS" min="-2" max="-2" attributes="0"/>
                                       <Component id="mpBasicForm" min="-2" max="-2" attributes="0"/>
-                                      <Component id="mpPronunciation" alignment="0" min="-2" max="-2" attributes="0"/>
+                                      <Component id="mpPronunciation" min="-2" max="-2" attributes="0"/>
                                   </Group>
                               </Group>
                               <Group type="102" attributes="0">
@@ -42,7 +42,7 @@
                           </Group>
                       </Group>
                       <Group type="102" alignment="0" attributes="0">
-                          <EmptySpace min="-2" pref="81" max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="70" max="-2" attributes="0"/>
                           <Component id="mpWordTitle" min="-2" max="-2" attributes="0"/>
                       </Group>
                       <Component id="filler1" alignment="1" min="-2" max="-2" attributes="0"/>
@@ -75,8 +75,8 @@
                   </Group>
                   <EmptySpace max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="3" attributes="0">
-                      <Component id="mpPronunciation" alignment="3" min="-2" max="-2" attributes="0"/>
                       <Component id="jLabel9" alignment="3" min="-2" max="-2" attributes="0"/>
+                      <Component id="mpPronunciation" alignment="3" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <EmptySpace max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="3" attributes="0">
@@ -130,11 +130,6 @@
             <Property name="text" type="java.lang.String" value="jLabel9"/>
           </Properties>
         </Component>
-        <Component class="javax.swing.JLabel" name="mpPronunciation">
-          <Properties>
-            <Property name="text" type="java.lang.String" value="xxx"/>
-          </Properties>
-        </Component>
         <Component class="javax.swing.JLabel" name="jLabel9">
           <Properties>
             <Property name="text" type="java.lang.String" value="&#x8aad;&#x307f;"/>
@@ -181,6 +176,11 @@
           <AuxValues>
             <AuxValue name="classDetails" type="java.lang.String" value="Box.Filler.HorizontalStrut"/>
           </AuxValues>
+        </Component>
+        <Component class="javax.swing.JLabel" name="mpPronunciation">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="jLabel26"/>
+          </Properties>
         </Component>
       </SubComponents>
     </Container>
