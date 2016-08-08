@@ -48,6 +48,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     private final String PROPERTY_TEXTFONT_FAMILY = "TEXT_FONT_FAMILY";
     private final String PROPERTY_TEXTFONT_SIZE = "TEXT_FONT_SIZE";
     private final String PROPERTY_HTSVOICE = "HTSVOICE";
+    private final String PROPERTY_TTS_ENABLE = "TTS＿ENABLE";
 
     private final FileSaver fileSaver;
     private EJAdvisor3App app;
@@ -117,6 +118,13 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         } else {
             File f = new File(ejadv3.getBaseDir() + htsVoice);
             setHTSVoiceDir(f.getPath());
+        }
+
+        String enableTTS = properties.getProperty(PROPERTY_TTS_ENABLE);
+        if (enableTTS != null && enableTTS.equals("TRUE")) {
+            ttsEnable = true;
+            jCheckBox1.setSelected(ttsEnable);
+            changeTTSState(ttsEnable);
         }
 
         hanasu = new Hanasu(htsVoice);
@@ -303,7 +311,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         uiSmallFontComponents.add(aboutMenuItem);
         uiSmallFontComponents.add(jLabel23);
         uiSmallFontComponents.add(jLabel24);
-
+        uiSmallFontComponents.add(statusMessageLabel);
         updateTextFont();
         updateUIFont();
     }
@@ -617,7 +625,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         //hanasu.setMoraSpeed(scoreToMoraSpeed(score));  
         setAnalysisResult(res);
         setAnalysisPoint(evaluationPoints);
-        showMessage("");
+        showMessage("Ready");
     }
 
     public int scoreToMoraSpeed(double score) {
@@ -712,7 +720,6 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         jLabel3 = new javax.swing.JLabel();
         jLabel4 = new javax.swing.JLabel();
         jLabel5 = new javax.swing.JLabel();
-        jSeparator1 = new javax.swing.JSeparator();
         jScrollPane2 = new javax.swing.JScrollPane();
         inputText = new javax.swing.JTextArea();
         jScrollPane1 = new javax.swing.JScrollPane();
@@ -1322,10 +1329,6 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jLabel3)
                 .addGap(0, 0, Short.MAX_VALUE))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addComponent(statusMessageLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jSeparator1))
             .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel4)
@@ -1349,6 +1352,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
                             .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                     .addComponent(jLabel2))
                 .addContainerGap())
+            .addComponent(statusMessageLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1371,7 +1375,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel3)
                 .addGap(2, 2, 2)
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 169, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
@@ -1380,10 +1384,9 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane9)
                     .addComponent(jScrollPane8))
-                .addGap(21, 21, 21)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(statusMessageLabel)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(statusMessageLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(1, 1, 1))
         );
 
         pack();
@@ -1470,8 +1473,10 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
 
     private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {
         // TODO add your handling code here:
+        showMessage("音声処理中・・・");
         hanasu.setTokens(ejadv3.getTokens());
         hanasu.doSynthesize(moraSpeed);
+        showMessage("Ready");
         synthesisDone = true;
         setWAVMenuState();
     }
@@ -1525,17 +1530,26 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         updateUIFont();
     }//GEN-LAST:event_jSlider1StateChanged
 
+    private void changeTTSState(Boolean flag) {
+        if (flag) {
+            properties.setProperty(PROPERTY_TTS_ENABLE, "TRUE");
+        } else {
+            properties.setProperty(PROPERTY_TTS_ENABLE, "FALSE");
+        }
+        
+        jTextField1.setEnabled(flag);
+        jSlider3.setEnabled(flag);
+        jLabel22.setEnabled(flag);
+        jLabel23.setEnabled(flag);
+        jLabel24.setEnabled(flag);
+        jLabel25.setEnabled(flag);
+        jButton9.setEnabled(flag);
+        setSynthesisButtonState();
+    }
     private void jCheckBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox1ActionPerformed
         // TODO add your handling code here:
         ttsEnable = jCheckBox1.isSelected();
-        jTextField1.setEnabled(ttsEnable);
-        jSlider3.setEnabled(ttsEnable);
-        jLabel22.setEnabled(ttsEnable);
-        jLabel23.setEnabled(ttsEnable);
-        jLabel24.setEnabled(ttsEnable);
-        jLabel25.setEnabled(ttsEnable);
-        jButton9.setEnabled(ttsEnable);
-        setSynthesisButtonState();
+        changeTTSState(ttsEnable);
     }//GEN-LAST:event_jCheckBox1ActionPerformed
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
@@ -1624,16 +1638,16 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
         jMenuItem2.setEnabled(synthesisDone);
     }
 
-    private void setHTSVoiceDir(String s){
+    private void setHTSVoiceDir(String s) {
         htsVoice = s;
         jLabel24.setText(htsVoice);
         setHTSVoiceProperties();
     }
-    
+
     /**
      * @param args the command line arguments
      */
-    
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenuItem aboutMenuItem;
     private javax.swing.JEditorPane analysisPane;
@@ -1698,7 +1712,6 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane8;
     private javax.swing.JScrollPane jScrollPane9;
-    private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSlider jSlider1;
     private javax.swing.JSlider jSlider2;
     private javax.swing.JSlider jSlider3;
