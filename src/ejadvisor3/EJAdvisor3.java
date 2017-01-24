@@ -93,7 +93,7 @@ public class EJAdvisor3 {
     public void initialize() {
         morphPath = base + "morph/";
         conf = new EJConfig(morphPath, 6);
-        conf.sen_conf = base + "sen.with_accent/conf/sen.xml";
+        conf.sen_conf = base + "sen/conf/sen.xml";
         conf.easyword = morphPath + "easyword.txt";
     }
 

@@ -894,6 +894,7 @@
           </Events>
           <AuxValues>
             <AuxValue name="JavaCodeGenerator_CreateCodeCustom" type="java.lang.String" value="new javax.swing.JTextArea()"/>
+            <AuxValue name="JavaCodeGenerator_ListenersCodePost" type="java.lang.String" value="inputText.setToolTipText(&quot;&#x30c6;&#x30ad;&#x30b9;&#x30c8;&#x3092;&#x5165;&#x529b;&#x3057;&#x3066;&#x304f;&#x3060;&#x3055;&#x3044;&quot;);"/>
           </AuxValues>
         </Component>
       </SubComponents>

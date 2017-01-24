@@ -1148,6 +1148,7 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
                 inputTextPropertyChange(evt);
             }
         });
+        inputText.setToolTipText("テキストを入力してください");
         jScrollPane2.setViewportView(inputText);
 
         analysisPane.setEditable(false);
@@ -1621,11 +1622,8 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
     }
 
     private void setSynthesisButtonState() {
-        if (ttsEnable && analysisDone) {
-            jButton8.setEnabled(true);
-        } else {
-            jButton8.setEnabled(false);
-        }
+            jButton8.setEnabled(ttsEnable && analysisDone);
+     
     }
 
     private void setMoraSpeed() {
