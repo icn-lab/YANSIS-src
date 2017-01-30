@@ -40,7 +40,7 @@ public class Hanasu {
         if (feature == null) {
             return;
         }
-
+        
         gyutan.make_label(feature);
 
         int sp1 = synthesizeAndCalcMoraSpeed(ratio);

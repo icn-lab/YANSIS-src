@@ -582,13 +582,22 @@ public class EJAdvisor3view extends javax.swing.JFrame implements EJAdvisor3GUI 
 
             for (int i = 0; i < w.length; i++) {
                 // 文節間に空白を入れる
+                System.err.printf("%s is content word\n", w[i].toString());
                 if (i > 0 && w[i].is_content_word()) {
                     //自立語の場合
                     //「する」に対して、直前が名詞-サ変接続の場合には自立語でない
-                    if (!w[i].getBasicString().equals("する")
-                            || !w[i - 1].getPOS().equals("名詞-サ変接続")) {
-                        res += "&nbsp;&nbsp;";
+                    if (w[i].getBasicString().equals("する")
+                            && w[i - 1].getPOS().equals("名詞-サ変接続")) {
+                       //　自立語ではない
                     }
+                    else if(w[i].getPOS().equals("名詞-数")
+                            && w[i-1].getPOS().equals("名詞-数")){
+                        // 連続した数字は、まとめて一つの自立語のように扱う
+                    }
+                    else{
+                        // 自立語の場合の処理
+                        res += "&nbsp;&nbsp;";
+                    }                    
                 }
                 // 形態素情報をアンカーに仕込む
                 res += "<a href=\"" + s + ":" + i + "\">";
